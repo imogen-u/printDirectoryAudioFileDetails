@@ -7,7 +7,7 @@ from mutagen.flac import FLAC
 from mutagen.mp3 import MP3
 
 # Choose directory
-os.chdir('DIRECTORY-PATH')
+os.chdir('DIRECTORY-HERE')
 
 # Get files in directory and sort
 entries = os.listdir()
@@ -38,5 +38,8 @@ for entry in entries:
         audio['TPE1'][0] + ' - ' + audio['TIT2'][0])
         print('\tAlbum : ' + audio['TALB'][0])
         print("\tTrack Length : " + length + "\n")
+    else:
+        print(entry)
+        print("\tFile format is not MP3 or FLAC. Incompatible.")
 
 # End of file.
