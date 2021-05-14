@@ -7,6 +7,7 @@ from mutagen.flac import FLAC
 from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4
 from datetime import timedelta, datetime
+import pyinputplus as pyip
 
 # Choose directory
 os.chdir("DIRECTORY-HERE")
@@ -15,13 +16,27 @@ os.chdir("DIRECTORY-HERE")
 entries = os.listdir()
 entries.sort()
 
-# Ask user to give date/time
+# Ask user to give a starting date/time
 print("When did you start listening to this playlist?")
 print("Enter the date and time in format yyyy/mm/dd hh:mm.")
 realtime = str(input())
 starttime = datetime.strptime(realtime, "%Y/%m/%d %H:%M")
 print("You started listening to playlist at "
       + str(starttime) + "\n")
+
+# Ask user if they listened to every track in dictory.
+prompt = 'Did you listen to this playlist in full?\n'
+fullListen = pyip.inputYesNo(prompt)
+print('\n')
+
+# Ask user to give an ending date/time
+if fullListen == 'no':
+    print("When did you stop listening to this playlist?")
+    print("Enter the date and time in format yyyy/mm/dd hh:mm.")
+    realtime = str(input())
+    endtime = datetime.strptime(realtime, "%Y/%m/%d %H:%M")
+    print("You stopped listening to playlist at "
+      + str(endtime) + "\n")
 
 # Get track length in time object
 def getTimeObject(file):
@@ -42,14 +57,17 @@ def printDetails(file):
         print('\tArtist - Track Title : ' +
         audio['ARTIST'][0] + ' - ' + audio['TITLE'][0])
         print('\tAlbum : ' + audio['ALBUM'][0])
+        print('\tAlbum Artist : ' + audio['ALBUMARTIST'][0])
     elif file.endswith('.mp3'):
         print('\tArtist - Track Title : ' +
         audio['TPE1'][0] + ' - ' + audio['TIT2'][0])
         print('\tAlbum : ' + audio['TALB'][0])
+        print('\tAlbum Artist : ' + audio['TPE2'][0])
     elif file.endswith('.m4a'):
         print('\tArtist - Track Title : ' +
         audio["\xa9ART"][0] + ' - ' + audio["\xa9nam"][0])
         print('\tAlbum : ' + audio["\xa9alb"][0])
+        print('\tAlbum Artist : ' + audio['aART'][0])
     else:
         print("\tFile format is incompatible. Skipping.\n")
 
@@ -62,11 +80,18 @@ for entry in entries:
         audio = MP4(entry)
     printDetails(entry)
     if entry.endswith(('.flac', '.m4a', '.mp3')):
+        # Print details on track length and time started.
         length = getTimeObject(audio)
         print("\tTrack Length : " + length)
         print("\tStarted listening at : " + str(starttime) + "\n")
         # Work out start time for the following track.
         length = getSecStr(length)
         starttime = starttime + timedelta(seconds=length)
+    # Work out if next track was listened to based on user's end listening time.
+    if 'endtime' in locals():
+        if starttime > endtime:
+            break
+
+print('Done!')
 
 # End of file.
