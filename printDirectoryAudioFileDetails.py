@@ -16,28 +16,6 @@ os.chdir("DIRECTORY-HERE")
 entries = os.listdir()
 entries.sort()
 
-# Ask user to give a starting date/time
-print("When did you start listening to this playlist?")
-print("Enter the date and time in format yyyy/mm/dd hh:mm.")
-realtime = str(input())
-starttime = datetime.strptime(realtime, "%Y/%m/%d %H:%M")
-print("You started listening to playlist at "
-      + str(starttime) + "\n")
-
-# Ask user if they listened to every track in dictory.
-prompt = 'Did you listen to this playlist in full?\n'
-fullListen = pyip.inputYesNo(prompt)
-print('\n')
-
-# Ask user to give an ending date/time
-if fullListen == 'no':
-    print("When did you stop listening to this playlist?")
-    print("Enter the date and time in format yyyy/mm/dd hh:mm.")
-    realtime = str(input())
-    endtime = datetime.strptime(realtime, "%Y/%m/%d %H:%M")
-    print("You stopped listening to playlist at "
-      + str(endtime) + "\n")
-
 # Get track length in time object
 def getTimeObject(file):
     sec = file.info.length
@@ -52,7 +30,6 @@ def getSecStr(time_str):
 # Print artist, track name and album. For some reason all audio formats
 # have very different dictionary key names for the tag data.
 def printDetails(file):
-    print(file)
     if file.endswith('.flac'):
         print('\tArtist - Track Title : ' +
         audio['ARTIST'][0] + ' - ' + audio['TITLE'][0])
@@ -71,6 +48,42 @@ def printDetails(file):
     else:
         print("\tFile format is incompatible. Skipping.\n")
 
+# Ask user to give a starting date/time
+print("When did you start listening to this playlist?")
+print("Enter the date and time in format yyyy/mm/dd hh:mm.")
+realtime = str(input())
+starttime = datetime.strptime(realtime, "%Y/%m/%d %H:%M")
+print("You started listening to playlist at "
+      + str(starttime) + "\n")
+
+# Ask user if they listened to every track in dictory.
+prompt = 'Did you listen to this playlist in full without repeats or skips?\n'
+fullListen = pyip.inputYesNo(prompt)
+
+# Ask user to give an ending date/time
+if fullListen == 'no':
+    prompt = 'Did you listen to every track?\n'
+    everyTrack = pyip.inputYesNo(prompt)
+    if everyTrack == 'no':
+        print("When did you stop listening to this playlist?")
+        print("Enter the date and time in format yyyy/mm/dd hh:mm.")
+        realtime = str(input())
+        endtime = datetime.strptime(realtime, "%Y/%m/%d %H:%M")
+        print("You stopped listening to playlist at "
+              + str(endtime))
+
+# Ask user if they played a track on repeat
+if fullListen == 'no':
+    prompt = 'Did you put any tracks on repeat?\n'
+    repeatAnyTrack = pyip.inputYesNo(prompt)
+
+# Ask user if they skipped a track
+if fullListen == 'no':
+    prompt = 'Did you skip any tracks?\n'
+    skipAnyTrack = pyip.inputYesNo(prompt)
+
+print("\n")
+
 for entry in entries:
     if entry.endswith('.flac'):
         audio = FLAC(entry)
@@ -78,15 +91,34 @@ for entry in entries:
         audio = MP3(entry)
     elif entry.endswith('.m4a'):
         audio = MP4(entry)
+    print(entry)
     printDetails(entry)
     if entry.endswith(('.flac', '.m4a', '.mp3')):
         # Print details on track length and time started.
         length = getTimeObject(audio)
-        print("\tTrack Length : " + length)
+        print("\tTrack Length : " + length + "\n")
+        if 'skipAnyTrack' in locals() and skipAnyTrack == 'yes':
+            prompt = 'Did you skip this track?\n'
+            skipThisTrack = pyip.inputYesNo(prompt)
+            if skipThisTrack == 'yes':
+                print("\tTRACK SKIPPED\n")
+                continue
         print("\tStarted listening at : " + str(starttime) + "\n")
+        # Ask user if they played track on repeat and how many times
+        if 'repeatAnyTrack' in locals() and repeatAnyTrack == 'yes':
+            prompt = 'Did you play this track on repeat?\n'
+            repeatThisTrack = pyip.inputYesNo(prompt)
+            if repeatThisTrack == 'yes':
+                print("How many times did you play this track?")
+                repeatNo = int(input())
+            print("\n")
         # Work out start time for the following track.
         length = getSecStr(length)
-        starttime = starttime + timedelta(seconds=length)
+        if 'repeatNo' in locals() and repeatNo != None:
+            starttime = starttime + (timedelta(seconds=length) * repeatNo)
+        else:
+            starttime = starttime + timedelta(seconds=length)
+        repeatNo = None
     # Work out if next track was listened to based on user's end listening time.
     if 'endtime' in locals():
         if starttime > endtime:
